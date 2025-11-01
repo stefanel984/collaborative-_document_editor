@@ -18,17 +18,16 @@ class DocumentController extends Controller
     /**
      * Create a new document
      */
+    // Create a new document
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
         ]);
 
-        $user = JWTAuth::parseToken()->authenticate();
-
         $document = Document::create([
             'title' => $request->title,
-            'owner_id' => $user->id,
+            'owner_id' => auth()->id(),
         ]);
 
         return response()->json($document, 201);
@@ -37,50 +36,72 @@ class DocumentController extends Controller
     /**
      * Get all documents for authenticated user
      */
-    public function index()
-    {
-        $user = JWTAuth::parseToken()->authenticate();
-
+     public function index(){
+        $user = auth()->user();
         $documents = Document::where('owner_id', $user->id)->get();
 
         return response()->json($documents);
     }
 
-    /**
-     * Get a specific document with its changes
+
+     /**
+     * Get full content of a specific document
      */
     public function show($id)
     {
-        $user = JWTAuth::parseToken()->authenticate();
+        $user = auth()->user();
 
-        $document = Document::with('changes')->findOrFail($id);
+        $document = Document::where('id', $id)
+                            ->where('owner_id', $user->id)
+                            ->first();
 
-        // Check ownership
-        if ($document->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
         }
 
-        return response()->json($document);
+        // Assuming you want to return the document content + changes
+        $documentChanges = $document->changes()->orderBy('version')->get();
+
+        return response()->json([
+            'document' => $document,
+            'changes' => $documentChanges
+        ]);
     }
 
+
     /**
-     * Log a new document change (from WebSocket or API)
+     * Make a change
      */
-    public function addChange(Request $request, $id)
+
+     public function addChange(Request $request, $id)
     {
-        $user = JWTAuth::parseToken()->authenticate();
+        $user = auth()->user();
 
-        $document = Document::findOrFail($id);
+        // Check if document exists and belongs to the user
+        $document = Document::where('id', $id)
+                            ->where('owner_id', $user->id)
+                            ->first();
 
-        if ($document->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!$document) {
+            return response()->json(['error' => 'Document not found'], 404);
         }
 
+        // Validate the request
         $request->validate([
-            'operation' => 'required|array',
-            'version' => 'required|integer',
+            'operation' => 'required|array', // e.g., { insert: "text", position: 5 }
+            'version' => 'required|integer', // client version
         ]);
 
+        // Optional: check version to handle simple OT/concurrency
+        $lastVersion = $document->changes()->max('version') ?? 0;
+        if ($request->version !== $lastVersion + 1) {
+            return response()->json([
+                'error' => 'Version mismatch',
+                'server_version' => $lastVersion
+            ], 409); // Conflict
+        }
+
+        // Save change
         $change = DocumentChange::create([
             'document_id' => $document->id,
             'user_id' => $user->id,
@@ -88,9 +109,9 @@ class DocumentController extends Controller
             'version' => $request->version,
         ]);
 
-        // TODO: Broadcast via WebSocket here
-        // broadcast(new DocumentUpdated($document, $change));
-
-        return response()->json($change, 201);
+        return response()->json([
+            'message' => 'Change saved',
+            'change' => $change
+        ], 201);
     }
 }
