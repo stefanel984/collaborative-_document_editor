@@ -13,7 +13,15 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DocumentController;
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::post('register', [AuthController::class, 'register']);
+Route::post('login', [AuthController::class, 'login']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('documents', [DocumentController::class, 'index']);
+    Route::post('documents', [DocumentController::class, 'store']);
+    Route::get('documents/{id}', [DocumentController::class, 'show']);
+    Route::post('documents/{id}/changes', [DocumentController::class, 'addChange']);
 });
