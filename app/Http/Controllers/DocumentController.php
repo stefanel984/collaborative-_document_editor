@@ -110,6 +110,8 @@ class DocumentController extends Controller
             'version' => $request->version,
         ]);
 
+        //to others to be sure that be not recive own event.
+
         broadcast(new DocumentChanged($document->id, $change))->toOthers();
 
         return response()->json([

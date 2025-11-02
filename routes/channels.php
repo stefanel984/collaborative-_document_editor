@@ -16,3 +16,10 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+
+Broadcast::channel('documents.{documentId}', function ($user, $documentId) {
+    return \App\Models\Document::where('id', $documentId)
+        ->where('owner_id', $user->id)
+        ->exists();
+});
