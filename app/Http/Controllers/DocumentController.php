@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Document;
 use App\Models\DocumentChange;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Events\DocumentChanged;
 
 class DocumentController extends Controller
 {
@@ -108,6 +109,8 @@ class DocumentController extends Controller
             'operation' => $request->operation,
             'version' => $request->version,
         ]);
+
+        broadcast(new DocumentChanged($document->id, $change))->toOthers();
 
         return response()->json([
             'message' => 'Change saved',
