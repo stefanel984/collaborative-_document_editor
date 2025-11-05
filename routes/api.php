@@ -24,4 +24,5 @@ Route::middleware('auth:api')->group(function () {
     Route::post('documents', [DocumentController::class, 'store']);
     Route::get('documents/{id}', [DocumentController::class, 'show']);
     Route::post('documents/{id}/changes', [DocumentController::class, 'addChange']);
+    Route::get('documents/{id}/changes', [DocumentController::class, 'getChanges']);
 });

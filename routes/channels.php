@@ -18,8 +18,13 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 
-Broadcast::channel('documents.{documentId}', function ($user, $documentId) {
-    return \App\Models\Document::where('id', $documentId)
-        ->where('owner_id', $user->id)
-        ->exists();
+Broadcast::channel('document.{id}', function ($user, $id) {
+    return ['id' => $user->id, 'name' => $user->name];
+});
+
+Broadcast::channel('presence-documents.{documentId}', function ($user, $documentId) {
+    // ensure user is authorized for document
+    return \App\Models\Document::where('id', $documentId)->where('owner_id', $user->id)->exists()
+         ? ['id' => $user->id, 'name' => $user->name]
+         : false;
 });

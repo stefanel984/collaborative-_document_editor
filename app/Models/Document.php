@@ -18,4 +18,8 @@ class Document extends Model
     {
         return $this->hasMany(DocumentChange::class);
     }
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }
