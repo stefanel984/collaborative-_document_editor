@@ -28,3 +28,5 @@ Broadcast::channel('presence-documents.{documentId}', function ($user, $document
          ? ['id' => $user->id, 'name' => $user->name]
          : false;
 });
+
+Broadcast::routes(['middleware' => ['auth:sanctum']]);

@@ -2,8 +2,6 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -18,32 +16,20 @@ class DocumentChanged implements ShouldBroadcast
     public $document;
     public $change;
 
-    /**
-     * Create a new event instance.
-     *
-     * @return void
-     */
     public function __construct($documentId, DocumentChange $change)
     {
         $this->change = $change;
-
-        // Include full document content
         $this->document = [
             'id' => $documentId,
+            'operation' => $change->document->operation,
             'title' => $change->document->title,
-            'content' => $change->document->content, // make sure content is up-to-date
             'version' => $change->version,
         ];
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return Channel|array
-     */
     public function broadcastOn()
     {
-        return new PresenceChannel('document.' . $this->document['id']);
+        return new PrivateChannel('document.' . $this->document['id']);
     }
 
     public function broadcastWith()
